@@ -6,21 +6,30 @@ Version: 1.0
 Author: Raya Anjum
 */
 
-function rgb_fetch_latest_books($total_books = 40, $query = 'subject:fiction 2024') {
+function rgb_fetch_latest_books($total_books = 40, $query = '') {
     $api_key = 'AIzaSyCrVJc48he14On6HY1tmRKlEy49byQF1MA';
+    
+    // Default if nothing searched
+    if (empty($query)) {
+        $query = 'subject:fiction 2024';
+    }
+
     $collected_books = [];
-    $collected_ids = [];
-    $chunk = 40; // Google Books API max is 40
-    $startIndex = 0;
+    $collected_ids   = [];
+    $chunk           = 40; // API max
+    $startIndex      = 0;
+
     while (count($collected_books) < $total_books && $startIndex < 80) {
         $url = "https://www.googleapis.com/books/v1/volumes?q=" . urlencode($query) .
             "&orderBy=newest&maxResults=" . $chunk .
             "&startIndex=" . $startIndex .
             "&key=" . $api_key;
+
         $response = wp_remote_get($url);
         if (is_wp_error($response)) break;
         $body = wp_remote_retrieve_body($response);
         $data = json_decode($body, true);
+
         if (isset($data['items'])) {
             foreach ($data['items'] as $book) {
                 $book_id = $book['id'];
@@ -31,18 +40,24 @@ function rgb_fetch_latest_books($total_books = 40, $query = 'subject:fiction 202
                 }
             }
         } else {
-            break; // no more items
+            break;
         }
         $startIndex += $chunk;
     }
     return $collected_books;
 }
 
+
 function rgb_display_books_shortcode($atts) {
     $page = isset($_GET['pg']) ? max(1, intval($_GET['pg'])) : 1;
     $per_page = 8; 
     $total_books = 40;
-    $books = rgb_fetch_latest_books($total_books);
+    $search_query = isset($_GET['booksearch']) ? sanitize_text_field($_GET['booksearch']) : '';
+$books = rgb_fetch_latest_books($total_books, $search_query);
+
+
+
+
 
     // Pagination math
     $total_pages = ceil(count($books) / $per_page);
@@ -139,6 +154,11 @@ function rgb_display_books_shortcode($atts) {
     .book-pagination .current-page { background: #2065d1; color: #fff; }
     </style>';
 
+    if (isset($_GET['s']) && !empty($_GET['s'])) {
+    $output .= '<h2>Search results for: <em>' . esc_html($_GET['s']) . '</em></h2>';
+}
+
+
     $output .= '<div class="book-cards-container">';
     foreach ($page_books as $book) {
     $book_id = esc_attr($book['id'] ?? '');
@@ -186,5 +206,11 @@ function rgb_display_books_shortcode($atts) {
 }
 
 
-
 add_shortcode('random_books_list', 'rgb_display_books_shortcode');
+
+add_filter('get_search_form', function($form) {
+    $form = str_replace('action="' . esc_url(home_url('/')) . '"', 'action="' . esc_url(home_url('/books/')) . '"', $form);
+    $form = str_replace('name="s"', 'name="booksearch"', $form);
+    return $form;
+});
+
