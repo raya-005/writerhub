@@ -53,10 +53,7 @@ function rgb_display_books_shortcode($atts) {
     $per_page = 8; 
     $total_books = 40;
     $search_query = isset($_GET['booksearch']) ? sanitize_text_field($_GET['booksearch']) : '';
-$books = rgb_fetch_latest_books($total_books, $search_query);
-
-
-
+    $books = rgb_fetch_latest_books($total_books, $search_query);
 
 
     // Pagination math
