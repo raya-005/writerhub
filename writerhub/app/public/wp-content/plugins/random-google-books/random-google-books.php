@@ -12,8 +12,7 @@ function rgb_fetch_latest_books($total_books = 40, $query = 'subject:fiction 202
     $collected_ids = [];
     $chunk = 40; // Google Books API max is 40
     $startIndex = 0;
-    // Loop until you collect requested number or run out of results
-    while (count($collected_books) < $total_books && $startIndex < 80) { // 2 pages 0/40
+    while (count($collected_books) < $total_books && $startIndex < 80) {
         $url = "https://www.googleapis.com/books/v1/volumes?q=" . urlencode($query) .
             "&orderBy=newest&maxResults=" . $chunk .
             "&startIndex=" . $startIndex .
@@ -39,23 +38,28 @@ function rgb_fetch_latest_books($total_books = 40, $query = 'subject:fiction 202
     return $collected_books;
 }
 
-
-
 function rgb_display_books_shortcode($atts) {
-    $books = rgb_fetch_latest_books(40);
+    $page = isset($_GET['pg']) ? max(1, intval($_GET['pg'])) : 1;
+    $per_page = 8; 
+    $total_books = 40;
+    $books = rgb_fetch_latest_books($total_books);
 
-     $output = '<script>
-window.randomBooksData = ' . json_encode($books) . ';
-console.log("Random Books Data:", window.randomBooksData);
-</script>';
+    // Pagination math
+    $total_pages = ceil(count($books) / $per_page);
+    $page = min($page, $total_pages); // Prevent overflow
+    $offset = ($page - 1) * $per_page;
+    $page_books = array_slice($books, $offset, $per_page);
 
-$output .= '
-    <style>
+    $output = '<style>
     .book-cards-container {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         gap: 25px;
         padding: 20px;
+    }
+    .book-card-link {
+        color: inherit;
+        text-decoration: none;
     }
     .book-card {
         background: linear-gradient(160deg, #ffffff, #f9fafc);
@@ -112,46 +116,74 @@ $output .= '
         overflow: hidden;
         max-height: 4.2em;
     }
-
-    /* Add a nice subtle hover effect on image */
     .book-card img:hover {
         transform: scale(1.05);
         transition: transform 0.3s ease;
     }
-    </style>
+    .book-pagination {
+        margin: 18px auto;
+        text-align: center;
+    }
+    .book-pagination a, .book-pagination span.current-page {
+        display: inline-block;
+        padding: 6px 13px;
+        margin: 0 2px;
+        border-radius: 5px;
+        font-weight: 600;
+        background: #f3f5fa;
+        color: #2065d1;
+        text-decoration: none;
+        transition: background 0.18s, color 0.18s;
+    }
+    .book-pagination a:hover { background: #e2e6ef; color: #183c74;}
+    .book-pagination .current-page { background: #2065d1; color: #fff; }
+    </style>';
 
-
-    <div class="book-cards-container">
-    ';
-
-    foreach ($books as $book) {
+    $output .= '<div class="book-cards-container">';
+    foreach ($page_books as $book) {
     $book_id = esc_attr($book['id'] ?? '');
     $title = esc_html($book['volumeInfo']['title'] ?? 'Unknown Title');
-    $author = esc_html($book['volumeInfo']['authors'][0] ?? 'none');
+    $author = esc_html($book['volumeInfo']['authors'][0] ?? 'None');
     $description = esc_html(mb_substr($book['volumeInfo']['description'] ?? 'No description available.', 0, 120)) . '...';
     $thumbnail = $book['volumeInfo']['imageLinks']['thumbnail'] ?? '';
-    $thumbnail_html = $thumbnail
-        ? '<img class="book-card-thumb" src="' . esc_url($thumbnail) . '" alt="'. $title .'" loading="lazy">'
-        : '<div style="width:128px;height:192px;background:#eee;display:flex;align-items:center;justify-content:center;color:#aaa;">No Image</div>';
     $book_url = "https://books.google.com/books?id=" . $book_id;
 
+    $thumbnail_html = $thumbnail
+        ? '<a href="'.$book_url.'" target="_blank" rel="noopener noreferrer">
+                <img class="book-card-thumb" src="' . esc_url($thumbnail) . '" alt="'. $title .'" loading="lazy">
+           </a>'
+        : '<div style="width:128px;height:192px;background:#eee;display:flex;align-items:center;justify-content:center;color:#aaa;">No Image</div>';
+
     $output .= '
-        <a class="book-card-link" href="'.$book_url.'" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">
-            <div class="book-card">
-                ' . $thumbnail_html . '
-                <div class="book-card-title">' . $title . '</div>
-                <div class="book-card-author">' . $author . '</div>
-                <div class="book-card-desc">' . $description . '</div>
-            </div>
-        </a>
+        <div class="book-card">
+            ' . $thumbnail_html . '
+            <div class="book-card-title">' . $title . '</div>
+            <div class="book-card-author">' . $author . '</div>
+            <div class="book-card-desc">' . $description . '</div>
+        </div>
     ';
 }
 
     $output .= "</div>";
-    return $output;
-    
 
+    // Pagination Links
+    if ($total_pages > 1) {
+    $current_url = (is_ssl() ? "https://" : "http://") . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+    $base_url = remove_query_arg('pg', $current_url);
+    $output .= '<div class="book-pagination">';
+    for ($i = 1; $i <= $total_pages; $i++) {
+        $page_url = add_query_arg('pg', $i, $base_url);
+        if ($i == $page) {
+            $output .= '<span class="current-page">'.$i.'</span> ';
+        } else {
+            $output .= '<a href="' . esc_url($page_url) . '">' . $i . '</a> ';
+        }
     }
+    $output .= "</div>";
+}
+
+    return $output;
+}
 
 
 
