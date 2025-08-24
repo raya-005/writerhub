@@ -29,7 +29,7 @@ add_filter('wp_nav_menu_items', function($items, $args) {
             $logout_url = wp_logout_url(home_url('/'));
             $items .= '
                 <li class="menu-item menu-item-type-custom menu-item-username menu-item-has-children">
-                    <a href="' . esc_url($profile_url) . '">' . esc_html($user->display_name) . '</a>
+                    <a href="' . esc_url($profile_url) . '">' . esc_html($user->user_login) . '</a>
                     <ul class="sub-menu">
                         <li class="menu-item menu-item-user-profile">
                             <a href="' . esc_url($profile_url) . '">Profile</a>
@@ -46,6 +46,8 @@ add_filter('wp_nav_menu_items', function($items, $args) {
     }
     return $items;
 }, 20, 2);
+
+
 
 
 
