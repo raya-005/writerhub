@@ -47,6 +47,26 @@ add_filter('wp_nav_menu_items', function($items, $args) {
     return $items;
 }, 20, 2);
 
+add_action('init', function() { error_log('Init action triggered'); });
+
+add_action('init', function() {
+    add_rewrite_rule('^book-details/([^/]+)/?$', 'index.php?book_id=$matches[1]', 'top');
+});
+
+
+add_filter('query_vars', function($vars) {
+    $vars[] = 'book_id';
+    return $vars;
+});
+
+add_action('template_redirect', function() {
+    if (get_query_var('book_id')) {
+        include get_stylesheet_directory() . '/book-details-template.php';
+        exit;
+    }
+});
+
+
 
 
 

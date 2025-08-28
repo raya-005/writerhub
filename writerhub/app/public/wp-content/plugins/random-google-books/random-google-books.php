@@ -44,6 +44,7 @@ function rgb_fetch_latest_books($total_books = 40, $query = '') {
         }
         $startIndex += $chunk;
     }
+   // echo "<h2 style='color:red;'>Book Details Template Loaded</h2>";
     return $collected_books;
 }
 
@@ -61,6 +62,8 @@ function rgb_display_books_shortcode($atts) {
     $page = min($page, $total_pages); // Prevent overflow
     $offset = ($page - 1) * $per_page;
     $page_books = array_slice($books, $offset, $per_page);
+
+    echo "<script>console.log(" . json_encode($books) . ");</script>";
 
     $output = '<style>
     .book-cards-container {
@@ -163,14 +166,15 @@ function rgb_display_books_shortcode($atts) {
     $author = esc_html($book['volumeInfo']['authors'][0] ?? 'None');
     $description = esc_html(mb_substr($book['volumeInfo']['description'] ?? 'No description available.', 0, 120)) . '...';
     $thumbnail = $book['volumeInfo']['imageLinks']['thumbnail'] ?? '';
-    $book_url = "https://books.google.com/books?id=" . $book_id;
+    $book_details_url = home_url('/book-details/' . $book_id);
 
-    $thumbnail_html = $thumbnail
-        ? '<a href="'.$book_url.'" target="_blank" rel="noopener noreferrer">
-                <img class="book-card-thumb" src="' . esc_url($thumbnail) . '" alt="'. $title .'" loading="lazy">
-           </a>'
-        : '<div style="width:128px;height:192px;background:#eee;display:flex;align-items:center;justify-content:center;color:#aaa;">No Image</div>';
-
+$thumbnail_html = $thumbnail
+    ? '<a href="' . esc_url($book_details_url) . '">
+            <img class="book-card-thumb" src="' . esc_url($thumbnail) . '" alt="'. $title .'" loading="lazy">
+       </a>'
+    : '<a href="' . esc_url($book_details_url) . '">
+           <div style="width:128px;height:192px;background:#eee;display:flex;align-items:center;justify-content:center;color:#aaa;">No Image</div>
+      </a>';
     $output .= '
         <div class="book-card">
             ' . $thumbnail_html . '
