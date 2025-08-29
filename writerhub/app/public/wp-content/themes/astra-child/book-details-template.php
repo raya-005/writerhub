@@ -1,5 +1,7 @@
 <?php
-// Get the book ID from the URL query var
+
+get_header(); 
+
 $book_id = get_query_var('book_id');
 
 if (!$book_id) {
@@ -7,7 +9,7 @@ if (!$book_id) {
     return;
 }
 
-$api_key = 'AIzaSyCrVJc48he14On6HY1tmRKlEy49byQF1MA'; // Replace with your key
+$api_key = 'AIzaSyCrVJc48he14On6HY1tmRKlEy49byQF1MA'; 
 $api_url = 'https://www.googleapis.com/books/v1/volumes/' . urlencode($book_id) . '?key=' . $api_key;
 
 $response = wp_remote_get($api_url);
@@ -28,6 +30,7 @@ $info = $data['volumeInfo'];
 
 echo "<script>console.log(" . json_encode($info) . ");</script>";
 
+
 // Safe fields
 $title        = esc_html($info['title'] ?? 'Untitled');
 $authors      = !empty($info['authors']) ? esc_html(implode(', ', $info['authors'])) : 'Unknown Author';
@@ -42,12 +45,9 @@ $thumbnail = !empty($info['imageLinks']['thumbnail'])
 $preview_link = $info['previewLink'] ?? '';
 $google_books_url = 'https://books.google.com/books?id=' . esc_attr($book_id);
 
-// echo '<pre>';
-// print_r($info['imageLinks'] ?? []);
-// echo '</pre>';
 
+?> 
 
-?>
 
 <style>
 .book-details-container {
@@ -133,6 +133,79 @@ $google_books_url = 'https://books.google.com/books?id=' . esc_attr($book_id);
     background: #1855b4;
     box-shadow: 0 6px 16px rgba(36,102,232,0.4);
 }
+
+.review-btn {
+    display: inline-block;
+    background: #ff9800;
+    color: #fff;
+    border-radius: 8px;
+    padding: 12px 26px;
+    font-size: 1rem;
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: 12px;
+    box-shadow: 0 4px 10px rgba(255,152,0,0.3);
+    transition: all 0.2s ease;
+}
+.review-btn:hover {
+    background: #e68900;
+    box-shadow: 0 6px 16px rgba(255,152,0,0.4);
+}
+
+/* Modal styles */
+.review-modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.review-modal-content {
+    background: #fff;
+    padding: 28px;
+    border-radius: 12px;
+    width: 500px;
+    max-width: 90%;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    position: relative;
+}
+
+.review-modal-close {
+    position: absolute;
+    top: 12px;
+    right: 18px;
+    font-size: 1.6rem;
+    cursor: pointer;
+    color: #666;
+}
+
+.review-modal textarea {
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    padding: 12px;
+    font-size: 1rem;
+    resize: vertical;
+}
+
+.submit-review-btn {
+    margin-top: 12px;
+    padding: 12px 24px;
+    background: #2466e8;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+.submit-review-btn:hover {
+    background: #1855b4;
+}
+
 </style>
 
 <div class="book-details-container">
@@ -159,4 +232,11 @@ $google_books_url = 'https://books.google.com/books?id=' . esc_attr($book_id);
     <a class="read-book-btn" href="<?php echo esc_url($google_books_url); ?>" target="_blank" rel="noopener noreferrer">
         📖 Read It on Google Books
     </a>
+   <?php echo do_shortcode('[book_reviews book_id="'. esc_attr($book_id) .'"]'); ?>
+
+
+
+
+
 </div>
+<?php get_footer();
